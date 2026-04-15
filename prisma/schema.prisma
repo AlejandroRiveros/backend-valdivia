@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model User {
+  id              String          @id @default(uuid())
+  name            String
+  email           String          @unique
+  password        String
+  role            String          @default("ANALYST") // ANALYST, DIRECTOR, OPERATOR, JURIDIC, ADMIN
+  isActive        Boolean         @default(true)
+  activeProcesses Int             @default(0)
+  avatar          String?
+
+  tenderProcesses TenderProcess[] @relation("AnalystProcesses")
+}
+
+model Contractor {
+  id              String          @id @default(uuid())
+  name            String
+
+  tenderProcesses TenderProcess[] @relation("OperatorProcesses")
+  deliverables    Deliverable[]
+}
+
+model TenderProcess {
+  id             String      @id @default(uuid())
+  generatedId    String?     @unique // e.g. LP-2024-001
+  name           String
+  entity         String
+  modality       String
+  budget         Float
+  description    String?
+  startDate      DateTime
+  endDate        DateTime
+  
+  supervisorRole Boolean     @default(false)
+  accessLevel    String      @default("write") // read, write, admin
+  status         String      @default("DRAFT")
+
+  analystId      String
+  analyst        User        @relation("AnalystProcesses", fields: [analystId], references: [id])
+
+  operatorId     String?
+  operator       Contractor? @relation("OperatorProcesses", fields: [operatorId], references: [id])
+
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+}
+
+model Deliverable {
+  id              String      @id @default(uuid())
+  contractId      String      // External contract ID reference
+  
+  type            String
+  month           String
+  submissionDate  DateTime
+  
+  docStatus       String      @default("pending") // valid, warning, expired
+  balanceStatus   String      @default("pending") // consistent, inconsistent
+  status          String      @default("pending") // pending, approved, rejected
+  amount          Float
+  observations    String?
+
+  contractorId    String
+  contractor      Contractor  @relation(fields: [contractorId], references: [id])
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
