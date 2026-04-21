@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../prisma';
+
+const VALID_ROLES = ['ANALYST', 'DIRECTOR', 'OPERATOR', 'JURIDIC', 'ADMIN'] as const;
 
 export const getUsers = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -70,12 +73,17 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
     const { id } = req.params;
     const { name, role, isActive } = req.body;
 
+    if (role !== undefined && !VALID_ROLES.includes(role)) {
+      res.status(400).json({ error: `Rol inválido. Los roles válidos son: ${VALID_ROLES.join(', ')}` });
+      return;
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id },
-      data: { 
-        name: name !== undefined ? name : undefined, 
-        role: role !== undefined ? role : undefined, 
-        isActive: isActive !== undefined ? Boolean(isActive) : undefined 
+      data: {
+        name: name !== undefined ? name : undefined,
+        role: role !== undefined ? role : undefined,
+        isActive: isActive !== undefined ? Boolean(isActive) : undefined
       },
       select: { id: true, name: true, email: true, role: true, isActive: true }
     });
@@ -97,7 +105,10 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
     await prisma.user.delete({ where: { id } });
     res.json({ message: 'Usuario eliminado físicamente del sistema' });
   } catch (error) {
-    // Error genérico suele pasar si hay relacion restrictiva en base de datos.
-    res.status(500).json({ error: 'No se puede eliminar el usuario. Es posible que tenga procesos asignados. Considere desactivarlo.' });
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
+      res.status(409).json({ error: 'No se puede eliminar el usuario porque tiene procesos asignados. Considere desactivarlo.' });
+      return;
+    }
+    res.status(500).json({ error: 'Error al eliminar usuario' });
   }
 };

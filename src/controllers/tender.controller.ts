@@ -31,15 +31,16 @@ export const createTenderProcess = async (req: Request, res: Response): Promise<
       return;
     }
 
-    // Generar un ID como LP-202X-XXX automáticamente
     const year = new Date().getFullYear();
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
     let prefix = 'LP';
     if (modality === 'Selección Abreviada') prefix = 'SA';
     if (modality === 'Concurso de Méritos') prefix = 'CM';
     if (modality === 'Contratación Directa') prefix = 'CD';
-    
-    const generatedId = `${prefix}-${year}-${random}`;
+
+    const count = await prisma.tenderProcess.count({
+      where: { generatedId: { startsWith: `${prefix}-${year}` } }
+    });
+    const generatedId = `${prefix}-${year}-${String(count + 1).padStart(3, '0')}`;
 
     const newProcess = await prisma.tenderProcess.create({
       data: {

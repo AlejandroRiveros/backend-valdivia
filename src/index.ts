@@ -5,10 +5,15 @@ import deliverableRoutes from './routes/deliverable.routes';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
 
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET no está definido en las variables de entorno');
+  process.exit(1);
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+app.use(cors({ origin: process.env.ALLOWED_ORIGIN ?? 'http://localhost:5173' }));
 app.use(express.json());
 
 // Routes Director

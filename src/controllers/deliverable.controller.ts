@@ -87,6 +87,12 @@ export const rejectDeliverable = async (req: Request, res: Response): Promise<vo
       return;
     }
 
+    const deliverable = await prisma.deliverable.findUnique({ where: { id } });
+    if (!deliverable) {
+      res.status(404).json({ error: 'Entregable no encontrado' });
+      return;
+    }
+
     const updated = await prisma.deliverable.update({
       where: { id },
       data: {

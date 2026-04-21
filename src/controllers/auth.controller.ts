@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../prisma';
 
-const SECRET_KEY = process.env.JWT_SECRET || 'valdivia-super-secret-key';
+const SECRET_KEY = process.env.JWT_SECRET!;
 
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
