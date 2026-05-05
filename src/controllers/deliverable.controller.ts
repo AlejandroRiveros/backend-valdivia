@@ -106,3 +106,75 @@ export const rejectDeliverable = async (req: Request, res: Response): Promise<vo
     res.status(500).json({ error: 'Error al rechazar el entregable' });
   }
 };
+
+export const updateDocStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { docStatus, observation } = req.body;
+
+    const validStatuses = ['valid', 'warning', 'expired'];
+    if (!docStatus || !validStatuses.includes(docStatus)) {
+      res.status(400).json({ error: 'docStatus debe ser: valid, warning o expired' });
+      return;
+    }
+
+    const deliverable = await prisma.deliverable.findUnique({ where: { id } });
+    if (!deliverable) {
+      res.status(404).json({ error: 'Entregable no encontrado' });
+      return;
+    }
+
+    if (deliverable.status !== 'pending') {
+      res.status(403).json({ error: 'Solo se puede revisar documentación de entregables pendientes' });
+      return;
+    }
+
+    const updated = await prisma.deliverable.update({
+      where: { id },
+      data: {
+        docStatus,
+        observations: observation || deliverable.observations,
+      }
+    });
+
+    res.json({ message: 'Estado documental actualizado', deliverable: updated });
+  } catch (error) {
+    res.status(500).json({ error: 'Error actualizando el estado documental' });
+  }
+};
+
+export const createDeliverable = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { contractId, type, month, submissionDate, amount, observations, contractorId } = req.body;
+
+    if (!contractId || !type || !month || !submissionDate || !amount || !contractorId) {
+      res.status(400).json({ error: 'Faltan campos obligatorios' });
+      return;
+    }
+
+    const contractor = await prisma.contractor.findUnique({ where: { id: contractorId } });
+    if (!contractor) {
+      res.status(404).json({ error: 'Contratista no encontrado' });
+      return;
+    }
+
+    const deliverable = await prisma.deliverable.create({
+      data: {
+        contractId,
+        type,
+        month,
+        submissionDate: new Date(submissionDate),
+        amount: Number(amount),
+        observations: observations || null,
+        contractorId,
+        docStatus: 'pending',
+        balanceStatus: 'pending',
+        status: 'pending',
+      }
+    });
+
+    res.status(201).json({ message: 'Entregable registrado', deliverable });
+  } catch (error) {
+    res.status(500).json({ error: 'Error registrando el entregable' });
+  }
+};

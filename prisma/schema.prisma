@@ -19,7 +19,8 @@ model User {
   activeProcesses Int             @default(0)
   avatar          String?
 
-  tenderProcesses TenderProcess[] @relation("AnalystProcesses")
+  tenderProcesses     TenderProcess[] @relation("AnalystProcesses")
+  supervisedProcesses TenderProcess[] @relation("SupervisorProcesses")
 }
 
 model Contractor {
@@ -47,6 +48,9 @@ model TenderProcess {
 
   analystId      String
   analyst        User        @relation("AnalystProcesses", fields: [analystId], references: [id])
+
+  supervisorId   String?
+  supervisor     User?       @relation("SupervisorProcesses", fields: [supervisorId], references: [id])
 
   operatorId     String?
   operator       Contractor? @relation("OperatorProcesses", fields: [operatorId], references: [id])

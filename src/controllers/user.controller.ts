@@ -3,11 +3,15 @@ import bcrypt from 'bcrypt';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../prisma';
 
-const VALID_ROLES = ['ANALYST', 'DIRECTOR', 'OPERATOR', 'JURIDIC', 'ADMIN'] as const;
+const VALID_ROLES = ['ANALYST', 'DIRECTOR', 'OPERATOR', 'JURIDIC', 'ADMIN', 'SUPERVISOR'] as const;
 
 export const getUsers = async (req: Request, res: Response): Promise<void> => {
   try {
+    const { role } = req.query;
+    const where = role ? { role: String(role) } : {};
+
     const users = await prisma.user.findMany({
+      where,
       select: {
         id: true,
         name: true,
@@ -19,7 +23,7 @@ export const getUsers = async (req: Request, res: Response): Promise<void> => {
       },
       orderBy: { name: 'asc' }
     });
-    
+
     res.json(users);
   } catch (error) {
     res.status(500).json({ error: 'Error al obtener usuarios' });
